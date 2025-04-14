@@ -15,7 +15,7 @@ import os
 @st.cache_resource
 def train_or_load_model():
     if not os.path.exists("loan_model.pkl"):
-        dataset = pd.read_csv(r"C:\Users\RUDRANSH\Desktop\loan_approval_dataset.csv")
+        dataset = pd.read_csv("loan_approval_dataset.csv")
         dataset.columns = dataset.columns.str.strip()
         dataset.drop(columns="loan_id", inplace=True)
 
