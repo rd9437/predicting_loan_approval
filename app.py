@@ -53,8 +53,6 @@ def train_or_load_model():
 
 model = train_or_load_model()
 
-st.set_page_config(page_title="Loan Approval Prediction", layout="wide")
-
 st.markdown("""
     <style>
     .main-title {
