@@ -10,6 +10,8 @@ import joblib
 import streamlit as st
 import os
 
+st.set_page_config(page_title="Loan Approval Prediction", layout="wide")
+
 # ----------------- Model Training -----------------
 
 @st.cache_resource
