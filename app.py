@@ -1,5 +1,3 @@
-# loan_app.py
-
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
@@ -16,30 +14,38 @@ st.set_page_config(page_title="Loan Approval Prediction", layout="wide")
 
 @st.cache_resource
 def train_or_load_model():
+    # Check if model already exists
     if not os.path.exists("loan_model.pkl"):
+        print("Training a new model...")
+        # Load dataset
         dataset = pd.read_csv("loan_approval_dataset.csv")
         dataset.columns = dataset.columns.str.strip()
+        
+        # Drop unnecessary column and clean data
         dataset.drop(columns="loan_id", inplace=True)
-
         dataset['education'] = dataset['education'].str.strip()
         dataset['education'] = dataset['education'].map({'Not Graduate': 0, 'Graduate': 1})
-
+        
+        # Label encoding
         la = LabelEncoder()
         dataset["self_employed"] = la.fit_transform(dataset["self_employed"].astype(str))
         dataset["loan_status"] = la.fit_transform(dataset["loan_status"].astype(str))
 
+        # Feature and target columns
         X = dataset.drop(columns=["loan_status"])
         y = dataset["loan_status"]
 
+        # Split data into training and test sets
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+        # Initialize and train model
         model = RandomForestClassifier()
         model.fit(X_train, y_train)
 
-        # Save the model
+        # Save the trained model
         joblib.dump(model, "loan_model.pkl")
 
-        # Print evaluation in terminal
+        # Model Evaluation
         y_pred = model.predict(X_test)
         print("Model Trained.")
         print("Accuracy:", accuracy_score(y_test, y_pred))
@@ -47,6 +53,7 @@ def train_or_load_model():
     else:
         print("Loading existing model...")
 
+    # Return the model
     return joblib.load("loan_model.pkl")
 
 # ----------------- Streamlit App -----------------
@@ -96,40 +103,50 @@ with st.form("loan_input_form"):
     luxury_assets_value = st.number_input("Luxury Assets Value", min_value=0)
     bank_asset_value = st.number_input("Bank Asset Value", min_value=0)
     no_of_dependents = st.number_input("Number of Dependents", min_value=0, step=1)
-    
+
     submit_button = st.form_submit_button("Predict Loan Approval")
 
 if submit_button:
-    input_data = pd.DataFrame({
-        "education": [1 if education == "Graduate" else 0],
-        "self_employed": [1 if self_employed == "Yes" else 0],
-        "cibil_score": [cibil_score],
-        "income_annum": [income_annum],
-        "loan_amount": [loan_amount],
-        "loan_term": [loan_term],
-        "residential_assets_value": [residential_assets_value],
-        "commercial_assets_value": [commercial_assets_value],
-        "luxury_assets_value": [luxury_assets_value],
-        "bank_asset_value": [bank_asset_value],
-        "no_of_dependents": [no_of_dependents]
-    })
+    # Validate the inputs (basic checks)
+    if loan_amount > income_annum:
+        st.warning("Loan amount should not exceed annual income.")
+    else:
+        # Prepare the data for prediction
+        input_data = pd.DataFrame({
+            "education": [1 if education == "Graduate" else 0],
+            "self_employed": [1 if self_employed == "Yes" else 0],
+            "cibil_score": [cibil_score],
+            "income_annum": [income_annum],
+            "loan_amount": [loan_amount],
+            "loan_term": [loan_term],
+            "residential_assets_value": [residential_assets_value],
+            "commercial_assets_value": [commercial_assets_value],
+            "luxury_assets_value": [luxury_assets_value],
+            "bank_asset_value": [bank_asset_value],
+            "no_of_dependents": [no_of_dependents]
+        })
 
-    expected_columns = [
-        "no_of_dependents",
-        "education",
-        "self_employed",
-        "income_annum",
-        "loan_amount",
-        "loan_term",
-        "cibil_score",
-        "residential_assets_value",
-        "commercial_assets_value",
-        "luxury_assets_value",
-        "bank_asset_value",
-    ]
-    input_data = input_data[expected_columns]
+        # Check column names match exactly with the training data
+        expected_columns = [
+            "no_of_dependents",
+            "education",
+            "self_employed",
+            "income_annum",
+            "loan_amount",
+            "loan_term",
+            "cibil_score",
+            "residential_assets_value",
+            "commercial_assets_value",
+            "luxury_assets_value",
+            "bank_asset_value",
+        ]
 
-    prediction = model.predict(input_data)
-    result = "✅ Approved" if prediction[0] == 1 else "❌ Rejected"
+        # Ensure input data matches expected column order
+        input_data = input_data[expected_columns]
 
-    st.markdown(f"<h3 style='text-align: center; color: #2e6c80;'>Loan Status: {result}</h3>", unsafe_allow_html=True)
+        # Predict with the trained model
+        prediction = model.predict(input_data)
+        result = "✅ Approved" if prediction[0] == 1 else "❌ Rejected"
+
+        # Display the result
+        st.markdown(f"<h3 style='text-align: center; color: #2e6c80;'>Loan Status: {result}</h3>", unsafe_allow_html=True)
